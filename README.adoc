@@ -1,4 +1,4 @@
-# Technical Exercise - User Management API with Kafka Integration
+# Technical Exercise - User Management API with Kafka Integration (TROS-1231)
 
 A technical exercise demonstrating a **Vert.x**-based REST API for user management with **Apache Kafka** event streaming integration. When users are created, events are published to Kafka for downstream processing.
 

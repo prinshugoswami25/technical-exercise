@@ -1,0 +1,187 @@
+# Technical Exercise - User Management API with Kafka Integration
+
+A technical exercise demonstrating a **Vert.x**-based REST API for user management with **Apache Kafka** event streaming integration. When users are created, events are published to Kafka for downstream processing.
+
+## Tech Stack
+
+- **Vert.x 4.5** – Reactive toolkit for building event-driven applications
+- **Apache Kafka** – Event streaming platform for publishing user events
+- **Java 21** – Runtime
+- **Maven** – Build tool
+
+## Architecture
+
+- **REST API** → **Vert.x Event Bus** → **User Service** → **Kafka Producer**
+- User create/update/delete operations are handled via the Vert.x Event Bus
+- `user.create` events are published to the `user-events` Kafka topic
+- In-memory storage (no database)
+
+---
+
+## Prerequisites
+
+- Java 21+
+- Maven 3.6+
+- Apache Kafka (for event streaming)
+
+---
+
+## Quick Start
+
+### 1. Build the Project
+
+```bash
+mvn clean package
+```
+
+### 2. Run the Application
+
+```bash
+mvn exec:java
+```
+
+Or run the fat JAR:
+
+```bash
+java -jar target/technical-exercise-1.0.0-SNAPSHOT-fat.jar
+```
+
+The server starts on **http://localhost:8080**.
+
+---
+
+## Kafka Setup
+
+### Install Kafka (macOS with Homebrew)
+
+```bash
+brew install kafka
+```
+
+It will automatically start kafka service by default if not, run 
+```bash
+brew services start kafka
+```
+
+### Create the `user-events` Topic
+
+```bash
+kafka-topics --create --topic user-events --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
+```
+
+### Verify Topic Creation
+
+```bash
+kafka-topics --list --bootstrap-server localhost:9092
+```
+
+---
+
+## API Examples (cURL)
+
+### Create a User
+
+```bash
+curl -X POST http://localhost:8080/users \
+  -H "Content-Type: application/json" \
+  -d '{"name":"test","email":"test@test.com"}'
+```
+
+**Example response:**
+
+```json
+{"id":"4e5bcfc8-0c37-40ca-9c90-bfbf62fcde39","name":"test","email":"test@test.com"}
+```
+
+### View All Users
+
+```bash
+curl http://localhost:8080/users
+```
+
+**Example response:**
+
+```json
+[
+  {"id":"4e5bcfc8-0c37-40ca-9c90-bfbf62fcde39","name":"test","email":"test@test.com"}
+]
+```
+
+### Delete a User
+
+```bash
+curl -X DELETE http://localhost:8080/users/{user-id}
+```
+
+Replace `{user-id}` with the actual UUID returned when creating the user.
+
+---
+
+## Consuming Kafka Events
+
+### Console Consumer (Terminal)
+
+Consume all messages from the `user-events` topic from the beginning:
+
+```bash
+kafka-console-consumer --topic user-events --from-beginning --bootstrap-server localhost:9092
+```
+
+
+### End-to-End Flow
+
+1. Start Zookeeper and Kafka
+2. Create the `user-events` topic
+3. Start the console consumer in one terminal
+4. Run the application (`mvn exec:java`)
+5. Create a user via cURL
+6. Observe the event in the consumer terminal
+
+---
+
+## Project Structure
+
+```
+src/main/java/zendesk/
+├── MainVerticle.java          # HTTP server & routing
+├── ServiceStarter.java        # Application entry point
+├── router/
+│   └── UserRouter.java       # REST endpoints
+├── service/
+│   └── UserService.java     # In-memory user storage
+├── model/
+│   └── User.java            # User entity
+├── consumer/
+│   └── UserEventBusConsumer.java  # Event Bus handlers + Kafka publish
+└── kafka/
+    └── UserEventProducer.java    # Kafka producer for user-events
+```
+
+---
+
+## API Endpoints
+
+| Method | Endpoint       | Description        |
+|--------|----------------|--------------------|
+| GET    | `/users`       | List all users     |
+| POST   | `/users`       | Create a user      |
+| DELETE | `/users/:id`   | Delete a user by ID |
+
+---
+
+## Kafka Event Format
+
+Events published to `user-events`:
+
+```json
+{
+  "type": "user.create",
+  "payload": {
+    "name": "test",
+    "email": "test@test.com"
+  },
+  "timestamp": 1708234567890
+}
+```
+
+
